@@ -10,12 +10,15 @@ exports.handler = async (event) => {
 
   let body;
   try {
-    body = JSON.parse(event.body);
+    const raw = event.isBase64Encoded
+      ? Buffer.from(event.body, 'base64').toString('utf8')
+      : (event.body || '');
+    body = JSON.parse(raw);
   } catch {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { base64, filename } = body;
+  const { base64, filename } = body || {};
   if (!base64 || !filename) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing base64 or filename' }) };
   }

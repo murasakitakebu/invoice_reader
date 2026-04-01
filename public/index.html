@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Invoice Extractor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #f5f4f0;
@@ -217,6 +218,7 @@
   <div class="header-right">
     <span class="row-count" id="rowCount">0 rows</span>
     <button class="btn-ghost" id="exportBtn">Export CSV</button>
+    <button class="btn-ghost" id="exportXlsxBtn">Export Excel</button>
   </div>
 </header>
 
@@ -457,6 +459,19 @@ function renderTable() {
     btn.addEventListener('click', () => { rows.splice(+btn.dataset.ri, 1); renderTable(); });
   });
 }
+
+document.getElementById('exportXlsxBtn').addEventListener('click', () => {
+  if (!rows.length) { showError('No data to export'); return; }
+  const headers = ['#','Client Name','Sent to Castella','Internal Ref No.','Sort','Invoice No.','Issue Date','Due Date','Term','Overdue Days','Billing Period','Project / Description','EUR','USD','JPY','Tax Rate','Tax Amount','Other Amount','Total EUR (incl. tax)','Bank Account','Payment Date','Status','Paid by','Method','Payment Office','Cost Center','Contact Person','Department','Email','Phone Number','Note','Source File'];
+  const data = [headers];
+  rows.forEach((row, i) => {
+    data.push([i + 1, ...COLS.map(c => row[c] || ''), row._file || '']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
+  XLSX.writeFile(wb, 'invoices_' + new Date().toISOString().slice(0,10) + '.xlsx');
+});
 
 document.getElementById('exportBtn').addEventListener('click', () => {
   if (!rows.length) { showError('No data to export'); return; }
