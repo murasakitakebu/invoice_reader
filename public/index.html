@@ -376,20 +376,34 @@ function emptyRow(fname) {
   return row;
 }
 
-async function extractInvoice(base64, fname) {
-  const response = await fetch('/api/extract', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ base64, filename: fname })
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err.error || `Server error ${response.status}`);
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function extractInvoice(base64, fname, onWait) {
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const response = await fetch('/api/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64, filename: fname })
+    });
+    if (response.status === 429) {
+      const waitSec = 60;
+      for (let s = waitSec; s > 0; s--) {
+        onWait(`Rate limit — waiting ${s}s before retry...`);
+        await sleep(1000);
+      }
+      continue;
+    }
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${response.status}`);
+    }
+    const parsed = await response.json();
+    const row = emptyRow(fname);
+    COLS.forEach(k => { if (parsed[k] !== undefined) row[k] = String(parsed[k]); });
+    return row;
   }
-  const parsed = await response.json();
-  const row = emptyRow(fname);
-  COLS.forEach(k => { if (parsed[k] !== undefined) row[k] = String(parsed[k]); });
-  return row;
+  throw new Error('Failed after retries (rate limit)');
 }
 
 document.getElementById('extractBtn').addEventListener('click', async () => {
@@ -406,7 +420,7 @@ document.getElementById('extractBtn').addEventListener('click', async () => {
     progressFill.style.width = `${Math.round((done / waiting.length) * 100)}%`;
     try {
       const base64 = await fileToBase64(f.file);
-      const data = await extractInvoice(base64, f.name);
+      const data = await extractInvoice(base64, f.name, msg => { progressLabel.textContent = msg; });
       rows.push(data);
       f.status = 'done';
     } catch(e) {
@@ -417,6 +431,12 @@ document.getElementById('extractBtn').addEventListener('click', async () => {
     done++;
     renderFileList();
     renderTable();
+    if (done < waiting.length) {
+      for (let s = 15; s > 0; s--) {
+        progressLabel.textContent = `Waiting ${s}s before next file...`;
+        await sleep(1000);
+      }
+    }
   }
   progressFill.style.width = '100%';
   progressLabel.textContent = `Done — ${done} file(s) processed`;
