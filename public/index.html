@@ -162,9 +162,14 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    overflow: hidden;
   }
-  .table-scroll { overflow-x: auto; }
+  .table-scroll {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+    min-height: 160px;
+    border-radius: var(--radius-lg);
+  }
   table { width: 100%; border-collapse: collapse; min-width: 2000px; }
   thead th {
     background: var(--surface2);
@@ -179,7 +184,8 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     position: sticky;
-    top: 56px;
+    top: 0;
+    z-index: 1;
   }
   td {
     padding: 8px 10px;
