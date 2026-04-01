@@ -18,9 +18,9 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { base64, filename } = body || {};
-  if (!base64 || !filename) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing base64 or filename' }) };
+  const { text, filename } = body || {};
+  if (!text || !filename) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing text or filename' }) };
   }
 
   const prompt = `You are an invoice data extraction assistant. Extract ALL available information from this invoice PDF and return ONLY a valid JSON object with these exact keys. If a field is not found, use empty string "".
@@ -55,8 +55,7 @@ Return ONLY raw JSON, no markdown, no explanation.`;
           messages: [{
             role: 'user',
             content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-              { type: 'text', text: prompt }
+              { type: 'text', text: `${prompt}\n\n---\nINVOICE TEXT:\n${text}` }
             ]
           }]
         })
