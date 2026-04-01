@@ -36,25 +36,34 @@ Rules:
 Return ONLY raw JSON, no markdown, no explanation.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25000);
+
+    let response;
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+              { type: 'text', text: prompt }
+            ]
+          }]
+        })
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
@@ -77,6 +86,7 @@ Return ONLY raw JSON, no markdown, no explanation.`;
       body: JSON.stringify(parsed)
     };
   } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    const msg = e.name === 'AbortError' ? 'Request timed out (25s)' : e.message;
+    return { statusCode: 500, body: JSON.stringify({ error: msg }) };
   }
 };
