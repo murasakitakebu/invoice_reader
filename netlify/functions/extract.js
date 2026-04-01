@@ -73,8 +73,8 @@ Return ONLY raw JSON, no markdown, no explanation.`;
     }
 
     const result = await response.json();
-    const text = (result.content || []).map(b => b.text || '').join('');
-    const clean = text.replace(/```json|```/g, '').trim();
+    const responseText = (result.content || []).map(b => b.text || '').join('');
+    const clean = responseText.replace(/```json|```/g, '').trim();
 
     let parsed = {};
     try { parsed = JSON.parse(clean); } catch { parsed = {}; }
