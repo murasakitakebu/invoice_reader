@@ -436,12 +436,6 @@ document.getElementById('extractBtn').addEventListener('click', async () => {
     done++;
     renderFileList();
     renderTable();
-    if (done < waiting.length) {
-      for (let s = 15; s > 0; s--) {
-        progressLabel.textContent = `Waiting ${s}s before next file...`;
-        await sleep(1000);
-      }
-    }
   }
   progressFill.style.width = '100%';
   progressLabel.textContent = `Done — ${done} file(s) processed`;
